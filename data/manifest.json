@@ -1101,6 +1101,50 @@
    "generado": "2026-11-20"
   },
   {
+   "fichero": "adjudicaciones_perfiles_2023_p01.parquet",
+   "tipo": "adjudicaciones",
+   "fuente": "perfiles",
+   "periodo": "2023",
+   "parte": 1,
+   "filas": 244005,
+   "bytes": 9906165,
+   "sha256": "be105814d2bdba64ee15b03967e795925a31a9f7da30913454d2314aea81cc59",
+   "generado": "2026-11-20"
+  },
+  {
+   "fichero": "documentos_perfiles_2023_p01.parquet",
+   "tipo": "documentos",
+   "fuente": "perfiles",
+   "periodo": "2023",
+   "parte": 1,
+   "filas": 91198,
+   "bytes": 24133809,
+   "sha256": "eab1c3720de0cfa67a37b7d0de4aaac88efff6eeb927f1ee4c221b3df6dd303a",
+   "generado": "2026-11-20"
+  },
+  {
+   "fichero": "documentos_perfiles_2023_p02.parquet",
+   "tipo": "documentos",
+   "fuente": "perfiles",
+   "periodo": "2023",
+   "parte": 2,
+   "filas": 91199,
+   "bytes": 18935036,
+   "sha256": "cee5bf93c32c2a6796e1c9cb11c377c8afbb47e503c1177bc8713578d079e772",
+   "generado": "2026-11-20"
+  },
+  {
+   "fichero": "licitaciones_perfiles_2023_p01.parquet",
+   "tipo": "licitaciones",
+   "fuente": "perfiles",
+   "periodo": "2023",
+   "parte": 1,
+   "filas": 182397,
+   "bytes": 17580430,
+   "sha256": "58948b6d27fbcc51f1f299235730dd4e4e705177bc43137bf0fd26d277a58419",
+   "generado": "2026-11-20"
+  },
+  {
    "fichero": "adjudicaciones_perfiles_2024_p01.parquet",
    "tipo": "adjudicaciones",
    "fuente": "perfiles",
@@ -1530,5 +1574,5 @@
    "generado": "2026-11-20"
   }
  ],
- "generado": "2026-11-20T15:56:17"
+ "generado": "2026-11-20T16:08:25"
 }
