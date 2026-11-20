@@ -6,8 +6,8 @@ Uso habitual (tarea programada, desde la raíz del repositorio):
 
 Qué hace:
   1. Lee data/manifest.json para saber qué periodos hay y cuándo se generaron.
-  2. Decide qué falta: años cerrados (2020..año anterior) que no estén indexados (se construyen con sus 12 ZIP
-     mensuales, descargados en paralelo) y, del año en
+  2. Decide qué falta: años cerrados que no estén indexados (desde 2012 en perfiles, 2016 en agregadas y 2018 en
+     menores; con sus 12 ZIP mensuales en paralelo, o el anual si no hay mensuales) y, del año en
      curso, los meses ya publicados que no estén indexados. Lo ya indexado no se vuelve a descargar.
   3. Para cada fuente y periodo pendiente: descarga el ZIP de Hacienda, genera los Parquet
      con build_indice.py en data/, actualiza data/manifest.json, borra los ZIP y, con --publicar, hace
@@ -17,7 +17,7 @@ Qué hace:
 Al indexar el anual de un año, se retiran los meses de ese año (el anual los contiene).
 
 Otras opciones: --fuentes perfiles agregadas menores, --periodos 2023 202601 (fuerza esos periodos, p. ej. si
-Hacienda corrige un fichero), --desde 2020, --hasta-mes 9, --zips-locales DIR (usa ZIP ya descargados con nombre <fuente>_<periodo>.zip; un año se puede construir con
+Hacienda corrige un fichero), --desde AAAA (primer año; por defecto el primero con datos de cada fuente), --hasta-mes 9, --zips-locales DIR (usa ZIP ya descargados con nombre <fuente>_<periodo>.zip; un año se puede construir con
 sus 12 ZIP mensuales <fuente>_<AAAAMM>.zip).
 """
 import argparse, datetime, glob, hashlib, json, os, shutil, subprocess, sys, threading, queue, time
@@ -29,6 +29,9 @@ FUENTES = {
     'menores': 'sindicacion_1143/contratosMenoresPerfilesContratantes_{p}.zip',
 }
 TIPOS = ('licitaciones', 'adjudicaciones', 'documentos')
+# Primer año con datos en cada fuente y primer año con ficheros mensuales (antes, solo hay fichero anual).
+INICIO = {'perfiles': 2012, 'agregadas': 2016, 'menores': 2018}
+MENSUAL_DESDE = {'perfiles': 2018, 'agregadas': 2018, 'menores': 2019}
 AQUI = os.path.dirname(os.path.abspath(__file__)); RAIZ = os.path.abspath(os.path.join(AQUI, '..'))
 DESC = os.path.join(RAIZ, 'descargas'); DATA = os.path.join(RAIZ, 'data'); MAN = os.path.join(DATA, 'manifest.json')
 
@@ -70,9 +73,10 @@ def descargar(url, dest, locales):
 def pendientes(a, man):
     """Lista de (fuente, periodo, [(url, destino)]) a procesar.
 
-    - Años cerrados (desde..año anterior) que no estén en el índice: se construyen con sus 12 ficheros
-      mensuales, descargados en paralelo (mismo contenido que el anual y mucho más rápido: el servidor limita la
-      velocidad por conexión y no admite descargas por trozos).
+    - Años cerrados (desde el primero con datos de cada fuente hasta el año anterior) que no estén en el índice: se
+      construyen con sus 12 ficheros mensuales, descargados en paralelo (mismo contenido que el anual y mucho más
+      rápido: el servidor limita la velocidad por conexión y no admite descargas por trozos). Los años sin ficheros
+      mensuales (perfiles y agregadas antes de 2018, menores antes de 2019) se descargan con el fichero anual.
     - Año en curso: un periodo por mes (AAAAMM), solo los meses publicados que no estén ya en el índice.
     - Un periodo ya indexado no se vuelve a descargar salvo que se pida con --periodos (p. ej. si Hacienda
       corrige un año).
@@ -83,14 +87,16 @@ def pendientes(a, man):
         hay.setdefault((f['fuente'], f['periodo']), set()).add(f['tipo'])
     completo = lambda fu, p: hay.get((fu, p), set()) == set(TIPOS)
     zipurl = lambda fu, p: (BASE + FUENTES[fu].format(p=p), os.path.join(DESC, f'{fu}_{p}.zip'))
+    # Un año cerrado se construye con sus 12 ficheros mensuales (descargados en paralelo) si existen; si no, con el anual.
+    ficheros_año = lambda fu, yr: ([zipurl(fu, f'{yr}{m:02d}') for m in range(1, 13)] if yr >= MENSUAL_DESDE[fu] else [zipurl(fu, str(yr))])
     out = []
     for fu in a.fuentes:
         if a.periodos:
-            out += [(fu, p, [zipurl(fu, f'{p}{m:02d}') for m in range(1, 13)] if len(p) == 4 else [zipurl(fu, p)]) for p in a.periodos]
+            out += [(fu, p, ficheros_año(fu, int(p)) if len(p) == 4 else [zipurl(fu, p)]) for p in a.periodos]
             continue
-        for yr in range(a.desde, y):
-            if not completo(fu, str(yr)):   # el año se construye con sus 12 ficheros mensuales, descargados en paralelo
-                out.append((fu, str(yr), [zipurl(fu, f'{yr}{m:02d}') for m in range(1, 13)]))
+        for yr in range(max(a.desde or 0, INICIO[fu]), y):
+            if not completo(fu, str(yr)):
+                out.append((fu, str(yr), ficheros_año(fu, yr)))
         ult = min(hoy.month - 1, a.hasta_mes or 12)
         for m in range(1, ult + 1):
             p = f'{y}{m:02d}'
@@ -144,7 +150,7 @@ def main():
 def _main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--fuentes', nargs='+', default=list(FUENTES)); ap.add_argument('--periodos', nargs='+')
-    ap.add_argument('--desde', type=int, default=2020)
+    ap.add_argument('--desde', type=int, default=None, help='primer año a indexar (por defecto, el primero con datos de cada fuente)')
     ap.add_argument('--max-horas', type=float, default=5); ap.add_argument('--publicar', action='store_true')
     ap.add_argument('--zips-locales'); ap.add_argument('--hasta-mes', type=int, help='año en curso: último mes a incluir')
     a = ap.parse_args()
