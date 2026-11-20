@@ -1,3 +1,4 @@
 # Registro de ejecuciones de scripts/actualizar.py (una línea por ejecución)
 # fecha (hora de Madrid) | estado (SIN CAMBIOS / ACTUALIZADO / INCOMPLETO / ERROR) | detalle | estado del índice
 2026-11-20 23:37 | SIN CAMBIOS    | no hay periodos nuevos que indexar | índice: 149 ficheros, 1.09 GB, último mes 202610
+2026-11-21 00:25 | ACTUALIZADO    | publicado: perfiles 2012, perfiles 2013, perfiles 2014, perfiles 2015, agregadas 2016, perfiles 2016, agregadas 2017, perfiles 2017, agregadas 2018, menores 2018, perfiles 2018, agregadas 2019, menores 2019, perfiles 2019 | índice: 191 ficheros, 1.27 GB, último mes 202610
