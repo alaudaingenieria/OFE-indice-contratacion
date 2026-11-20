@@ -5,10 +5,10 @@ Uso:
   python3 build_indice.py --fuente perfiles --periodo 2025 --zips descargas/643_2025.zip --out dist/
   python3 build_indice.py --fuente perfiles --periodo 2026 --zips descargas/643_2026*.zip --out dist/
 
-Genera en --out:
-  licitaciones_<fuente>_<periodo>.parquet    una fila por expediente (última versión dentro del periodo)
-  adjudicaciones_<fuente>_<periodo>.parquet  una fila por lote y adjudicatario
-  documentos_<fuente>_<periodo>.parquet      enlaces a pliegos y a documentos de la mesa (actas, informes…)
+Genera en --out, en trozos de menos de 45 MB (GitHub no admite ficheros de más de 100 MB):
+  licitaciones_<fuente>_<periodo>_pNN.parquet    una fila por expediente (última versión dentro del periodo)
+  adjudicaciones_<fuente>_<periodo>_pNN.parquet  una fila por lote y adjudicatario
+  documentos_<fuente>_<periodo>_pNN.parquet      enlaces a pliegos y a documentos de la mesa (actas, informes…)
 
 El mismo expediente puede aparecer en varios periodos (cada vez que se actualiza). Al usar el índice,
 une todos los periodos y quédate con la fila de 'updated' más reciente por 'id'.
@@ -173,7 +173,20 @@ if __name__ == '__main__':
     A_df = pd.DataFrame([r for v in adjs.values() for r in v['rows']])
     D_df = L_df[['id', 'updated', 'docs_pliegos', 'docs_mesa']]
     L_df = L_df.drop(columns=['docs_pliegos', 'docs_mesa'])
+    MAX = 45e6
+    for f in glob.glob(os.path.join(a.out, f'*_{a.fuente}_{a.periodo}_p*.parquet')): os.remove(f)
     for df, nm in ((L_df, 'licitaciones'), (A_df, 'adjudicaciones'), (D_df, 'documentos')):
-        f = os.path.join(a.out, f'{nm}_{a.fuente}_{a.periodo}.parquet')
-        df.to_parquet(f, compression='zstd', compression_level=15, index=False)
-        print(f'{f}: {len(df)} filas, {os.path.getsize(f) / 1e6:.1f} MB')
+        tmp = os.path.join(a.out, f'{nm}_{a.fuente}_{a.periodo}.tmp')
+        df.to_parquet(tmp, compression='zstd', compression_level=15, index=False)
+        k = max(1, int(os.path.getsize(tmp) // (MAX * 0.85)) + (os.path.getsize(tmp) > MAX * 0.85))
+        os.remove(tmp)
+        while True:
+            paths, n = [], len(df)
+            for i in range(k):
+                f = os.path.join(a.out, f'{nm}_{a.fuente}_{a.periodo}_p{i + 1:02d}.parquet')
+                df.iloc[i * n // k:(i + 1) * n // k].to_parquet(f, compression='zstd', compression_level=15, index=False)
+                paths.append(f)
+            if max(os.path.getsize(f) for f in paths) <= MAX: break
+            for f in paths: os.remove(f)
+            k += 1
+        for f in paths: print(f'{f}: {os.path.getsize(f) / 1e6:.1f} MB')

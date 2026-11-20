@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Descarga y carga el índice publicado (release "datos"), uniendo periodos y quedándose con la última versión.
+"""Descarga y carga el índice publicado (carpeta data/ del repositorio), uniendo periodos y quedándose con la última versión.
 
 Como módulo:
   from leer_indice import cargar
@@ -9,12 +9,12 @@ Como módulo:
 Desde la línea de comandos (solo descarga):
   python3 leer_indice.py --fuentes perfiles agregadas --desde 2022 --hasta 2026 [--documentos] --dir indice/
 
-No necesita cuenta de GitHub: el repositorio y su release son públicos.
+No necesita cuenta de GitHub: el repositorio es público.
 """
 import argparse, json, os, subprocess
 
 REPO = 'alaudaingenieria/ofe-indice-contratacion'
-URL = f'https://github.com/{REPO}/releases/download/datos/'
+URL = f'https://raw.githubusercontent.com/{REPO}/main/data/'
 PREFIJOS = {
     'D:': 'https://contrataciondelsectorpublico.gob.es/wps/wcm/connect/PLACE_es/Site/area/docAccCmpnt?srv=cmpnt&cmpntname=GetDocumentsById&source=library&DocumentIdParam=',
     'F:': 'https://contrataciondelsectorpublico.gob.es/FileSystem/servlet/GetDocumentByIdServlet?DocumentIdParam=',
