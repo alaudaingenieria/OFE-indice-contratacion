@@ -76,6 +76,20 @@ lic, adj = cargar(fuentes=['perfiles', 'agregadas'], desde=2022, hasta=2025)
 sacyr = adj[adj.adjudicatario.str.contains('SACYR', case=False, na=False)].merge(lic, on=['id', 'updated', 'fuente'], how='left')
 ```
 
+## Skill
+
+La carpeta `skill/` contiene los ficheros que usa la skill `OFE-analisis-contratacion-empresa` (los descarga en cada
+uso desde raw.githubusercontent.com) y una copia de su `SKILL.md` para distribuirla:
+
+| Fichero | Para qué |
+|---|---|
+| `buscar_empresa.py` | Busca adjudicaciones de una empresa (y candidatas para participación) en el índice |
+| `leer_indice.py` | Descarga y une el índice (copia de `scripts/leer_indice.py`) |
+| `placsp_empresa.py` | Misma búsqueda sobre ZIP de Hacienda, para periodos aún no indexados |
+| `placsp_participacion.py` | Lee actas e informes de la mesa para detectar participaciones sin adjudicación |
+| `build_informe.py` + `informe_template.html` | Generan el informe HTML autónomo y el CSV |
+| `SKILL.md` | Instrucciones de la skill |
+
 ## Mantenimiento
 
 El índice se regenera con una **tarea programada** de Claude: ver [TAREA_PROGRAMADA.md](TAREA_PROGRAMADA.md).

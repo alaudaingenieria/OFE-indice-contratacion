@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+:root{color-scheme:light dark;--fg:#1f1e1c;--mut:#6b6965;--bg:#f7f6f3;--panel:#fff;--line:#e3e0d9;--c1:#2f6fb1;--c2:#d1763a;--c3:#8a63b8;--c4:#3d9a73;--grid:#ecebe7}
+@media (prefers-color-scheme:dark){:root{--fg:#ecebe8;--mut:#a5a29b;--bg:#1c1b19;--panel:#262523;--line:#3a3936;--grid:#33322f}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:1400px;margin:0 auto;padding:22px clamp(10px,3vw,30px);display:flex;flex-direction:column;gap:18px}
+h1{font:400 28px Georgia,serif;margin:0}h2{font-size:15px;margin:0 0 2px}.mut{color:var(--mut);font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.f{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}.f label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:2px}
+.f select,.f input[type=date],.f input[type=search]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 6px;max-width:16rem}
+.chk{flex-direction:row!important;align-items:center;gap:5px!important;color:var(--fg)!important;font-size:13px!important}
+button:disabled{opacity:.45;cursor:default}button{font:inherit;font-size:12px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+.k{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:10px}.k div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.k b{display:block;font:400 24px Georgia,serif;margin-top:4px;font-variant-numeric:tabular-nums}.k span{font-size:12px;color:var(--mut)}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,30rem),1fr));gap:12px}.wide{grid-column:1/-1}
+svg text{font-size:11px;fill:var(--mut)}.bar{cursor:pointer}
+.tip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:5px 8px;font-size:12px;display:none;z-index:9;max-width:320px}
+.lg{display:flex;gap:14px;font-size:12px;color:var(--mut);flex-wrap:wrap;margin:4px 0}.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.tb{max-height:40rem;overflow:auto;border-top:1px solid var(--line)}table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--panel);text-align:left;border-bottom:1px solid var(--line);padding:6px;cursor:pointer;white-space:nowrap;z-index:1}
+td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}td.n{text-align:right;white-space:nowrap}tr.x td{opacity:.4;text-decoration:line-through}
+.pill{display:inline-block;border-radius:10px;padding:1px 7px;font-size:11px;color:#fff;white-space:nowrap}
+details summary{cursor:pointer;color:var(--c1)}a{color:var(--c1)}
+@media (max-width:700px){.hide{display:none}}
+</style></head><body><div class="w">
+<header><h1 id="h1"></h1><p class="mut" id="sub"></p></header>
+<section class="card f">
+ <label class="chk"><input type="checkbox" class="rel" value="Adjudicataria" checked>Adjudicataria directa</label>
+ <label class="chk"><input type="checkbox" class="rel" value="Adjudicataria en UTE" checked>En UTE</label>
+ <label class="chk"><input type="checkbox" class="rel" value="Licitadora (no adjudicataria)" checked>Licitadora sin adjudicación</label>
+ <label>Desde<input type="date" id="d1"></label><label>Hasta<input type="date" id="d2"></label>
+ <label>Órgano<select id="org"></select></label><label>Tipo<select id="tip"></select></label><label>Fuente<select id="fue"></select></label>
+ <label>Buscar<input type="search" id="q" placeholder="título, expediente, socio…"></label>
+ <label class="chk"><input type="checkbox" id="vx">Ver excluidas</label>
+ <button id="reset">Quitar filtros</button>
+</section>
+<section class="k" id="kpi"></section>
+<div class="g">
+ <section class="card wide"><h2>Evolución anual</h2><p class="mut">Importe adjudicado sin IVA por año de adjudicación; los puntos son el nº de licitaciones a las que se presentó sin ganar.</p><div class="lg" id="lg1"></div><div id="c1"></div></section>
+ <section class="card"><h2>Órganos de contratación</h2><p class="mut">15 con más importe adjudicado. Pulsa una barra para filtrar.</p><div id="c2"></div></section>
+ <section class="card"><h2>Tipo de contrato</h2><p class="mut">Importe adjudicado sin IVA.</p><div id="c3"></div></section>
+ <section class="card"><h2>Socios en UTE</h2><p class="mut">Empresas con las que ha ido en UTE (nº de adjudicaciones). Pulsa para buscar.</p><div id="c4"></div></section>
+ <section class="card"><h2>Tasa de éxito por órgano</h2><p class="mut">Adjudicaciones / (adjudicaciones + participaciones sin ganar), órganos con 3 o más.</p><div id="c5"></div></section>
+ <section class="card wide"><h2>Contratos y licitaciones</h2>
+  <p class="mut">Desmarca la casilla de una fila para excluirla (identificación errónea o no aplica): deja de contar en todo el informe. Las exclusiones se recuerdan en este navegador; usa “Exportar exclusiones” para compartirlas.</p>
+  <div class="f" style="margin:6px 0"><button id="csv">Exportar CSV (filas incluidas)</button><button id="reac">Reactivar todas las excluidas</button><button id="exx">Exportar exclusiones</button><label class="chk" style="cursor:pointer"><input type="file" id="imx" accept=".json" hidden><span style="border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px">Importar exclusiones</span></label><span class="mut" id="nx"></span></div>
+  <div class="tb"><table><thead><tr>
+   <th data-s="inc">✓</th><th data-s="rel">Relación</th><th data-s="fecha">Fecha</th><th data-s="organo">Órgano</th><th data-s="exp" class="hide">Expediente</th>
+   <th data-s="titulo">Objeto</th><th data-s="tipo" class="hide">Tipo</th><th data-s="imp">Adjudicado</th><th data-s="pres" class="hide">Presupuesto</th>
+   <th data-s="baja" class="hide">Baja</th><th data-s="ofertas" class="hide">Ofertas</th><th data-s="adj" class="hide">Adjudicatario / evidencia</th><th>Enlace</th>
+  </tr></thead><tbody id="tb"></tbody></table></div></section>
+</div>
+<p class="mut" id="foot"></p></div><div class="tip" id="tt"></div>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent),M=D.meta,R=D.rows;
+const COL={'Adjudicataria':'var(--c1)','Adjudicataria en UTE':'var(--c2)','Licitadora (no adjudicataria)':'var(--c3)'};
+const eur=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',notation:'compact',maximumFractionDigits:1}),eurF=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}),nf=new Intl.NumberFormat('es-ES'),pc=new Intl.NumberFormat('es-ES',{style:'percent',maximumFractionDigits:1});
+const KEY='exclusiones_'+M.id;let X=new Set();try{X=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'))}catch(e){}
+const saveX=()=>{try{localStorage.setItem(KEY,JSON.stringify([...X]))}catch(e){}};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+$('#h1').textContent='Contratación pública de '+M.empresa;
+$('#sub').textContent=(M.nif.length?'NIF: '+M.nif.join(', ')+' · ':'')+'Variantes buscadas: '+M.variantes.join(', ')+' · '+M.criterios+' · Generado el '+M.generado;
+$('#foot').textContent='Fuente: datos abiertos de la Plataforma de Contratación del Sector Público. Importes sin IVA. Las participaciones sin adjudicación se detectan leyendo actas e informes de la mesa y deben revisarse con su evidencia.';
+const fillSel=(id,f)=>{const s=$(id);s.replaceChildren(new Option('Todos',''),...[...new Set(R.map(f).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')).map(v=>new Option(v,v)))};
+fillSel('#org',r=>r.organo);fillSel('#tip',r=>r.tipo);fillSel('#fue',r=>r.fuente);
+let sort={k:'fecha',d:-1};
+const filt=(incX)=>{const rel=$$('.rel').filter(c=>c.checked).map(c=>c.value),d1=$('#d1').value,d2=$('#d2').value,o=$('#org').value,t=$('#tip').value,fu=$('#fue').value,q=$('#q').value.trim().toLowerCase();
+ return R.filter(r=>rel.includes(r.rel)&&(!d1||r.fecha>=d1)&&(!d2||r.fecha<=d2)&&(!o||r.organo===o)&&(!t||r.tipo===t)&&(!fu||r.fuente===fu)&&(incX||!X.has(r.k))
+  &&(!q||(r.titulo+' '+r.tlote+' '+r.exp+' '+r.adj+' '+r.organo+' '+r.socios.join(' ')).toLowerCase().includes(q)))};
+const tt=$('#tt');const tip=(ev,h)=>{tt.replaceChildren();h.forEach((x,i)=>{const d=document.createElement('div');d.textContent=x;if(!i)d.className='mut';tt.append(d)});tt.style.display='block';
+ let x=ev.clientX+12,y=ev.clientY+12;if(x+tt.offsetWidth>innerWidth)x=ev.clientX-tt.offsetWidth-12;if(y+tt.offsetHeight>innerHeight)y=ev.clientY-tt.offsetHeight-12;tt.style.left=x+'px';tt.style.top=y+'px'};
+const hide=()=>tt.style.display='none';
+const NS='http://www.w3.org/2000/svg',el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);p&&p.append(e);return e};
+const txtW=(svg,s)=>{const t=el('text',{},svg);t.textContent=s;const w=t.getComputedTextLength?t.getComputedTextLength():s.length*6;t.remove();return w||s.length*6};
+function hbar(box,items,fmt,click){box.replaceChildren();if(!items.length){box.innerHTML='<p class="mut">Sin datos con estos filtros.</p>';return}
+ const W=Math.max(300,box.clientWidth),rh=24,H=items.length*rh+6,svg=el('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`},box);
+ let lw=Math.min(W*.45,Math.max(...items.map(d=>txtW(svg,d.l))))+10,vw=Math.max(...items.map(d=>txtW(svg,fmt(d.v)))),mx=Math.max(...items.map(d=>d.v))||1,sc=v=>v/mx*Math.max(10,W-lw-vw-14);
+ items.forEach((d,i)=>{const g=el('g',{class:'bar',transform:`translate(0,${i*rh+3})`},svg);let lab=d.l;const t=el('text',{x:lw-8,y:rh/2,'dy':'.32em','text-anchor':'end'},g);t.textContent=lab;
+  while(t.getComputedTextLength&&t.getComputedTextLength()>lw-12&&lab.length>5){lab=lab.slice(0,-2);t.textContent=lab+'…'}
+  el('rect',{x:lw,y:3,height:rh-8,width:Math.max(1,sc(d.v)),rx:3,fill:d.c||'var(--c1)'},g);const v=el('text',{x:lw+sc(d.v)+5,y:rh/2,dy:'.32em'},g);v.textContent=fmt(d.v);
+  g.addEventListener('mousemove',e=>tip(e,[d.l,d.t||fmt(d.v)]));g.addEventListener('mouseleave',hide);if(click)g.addEventListener('click',()=>click(d))})}
+function years(box,rows){box.replaceChildren();const ys=[...new Set(rows.map(r=>r.fecha.slice(0,4)).filter(Boolean))].sort();if(!ys.length){box.innerHTML='<p class="mut">Sin datos.</p>';return}
+ const W=Math.max(320,box.clientWidth),H=240,b=26,t=10,svg=el('svg',{width:'100%',viewBox:`0 0 ${W} ${H}`},box);
+ const agg=ys.map(y=>{const r=rows.filter(x=>x.fecha.startsWith(y));const s=k=>r.filter(x=>x.rel===k).reduce((a,x)=>a+(x.imp||0),0);return{y,d:s('Adjudicataria'),u:s('Adjudicataria en UTE'),p:r.filter(x=>x.rel==='Licitadora (no adjudicataria)').length,n:r.filter(x=>x.rel!=='Licitadora (no adjudicataria)').length}});
+ const mx=Math.max(...agg.map(a=>a.d+a.u))||1,mp=Math.max(...agg.map(a=>a.p))||1,ticks=[0,.25,.5,.75,1].map(f=>f*mx),lw=Math.max(...ticks.map(v=>txtW(svg,eur.format(v))))+8,rw=txtW(svg,nf.format(mp))+10;
+ const sy=v=>H-b-(v/mx)*(H-b-t),bw=(W-lw-rw)/ys.length;
+ ticks.forEach(v=>{el('line',{x1:lw,x2:W-rw,y1:sy(v),y2:sy(v),stroke:'var(--grid)'},svg);const tx=el('text',{x:lw-6,y:sy(v),dy:'.32em','text-anchor':'end'},svg);tx.textContent=eur.format(v)});
+ agg.forEach((a,i)=>{const x=lw+i*bw+bw*.18,w=bw*.64;
+  const r1=el('rect',{x,width:w,y:sy(a.d),height:H-b-sy(a.d),fill:COL['Adjudicataria'],rx:2},svg),r2=el('rect',{x,width:w,y:sy(a.d+a.u),height:sy(a.d)-sy(a.d+a.u),fill:COL['Adjudicataria en UTE'],rx:2},svg);
+  [r1,r2].forEach(r=>{r.addEventListener('mousemove',e=>tip(e,[a.y,'Directa: '+eurF.format(a.d),'En UTE: '+eurF.format(a.u),'Adjudicaciones: '+a.n,'Participaciones sin ganar: '+a.p]));r.addEventListener('mouseleave',hide)});
+  const lab=el('text',{x:x+w/2,y:H-8,'text-anchor':'middle'},svg);lab.textContent=a.y;
+  if(a.p){const cy=H-b-(a.p/mp)*(H-b-t);const c=el('circle',{cx:x+w/2,cy,r:5,fill:COL['Licitadora (no adjudicataria)']},svg);c.addEventListener('mousemove',e=>tip(e,[a.y,'Participaciones sin ganar: '+a.p]));c.addEventListener('mouseleave',hide)}});
+ const rt=el('text',{x:W-rw+6,y:t+4},svg);rt.textContent='máx. '+nf.format(mp)+' part.'}
+function draw(){
+ const rows=filt(false),adj=rows.filter(r=>r.rel!=='Licitadora (no adjudicataria)'),ute=adj.filter(r=>r.rel==='Adjudicataria en UTE'),part=rows.filter(r=>r.rel==='Licitadora (no adjudicataria)');
+ const sum=a=>a.reduce((s,r)=>s+(r.imp||0),0),bj=adj.filter(r=>r.baja!=null),ex=new Set(adj.map(r=>r.exp+'|'+r.organo));
+ const K=[['Adjudicaciones (lotes)',nf.format(adj.length)],['Expedientes adjudicados',nf.format(ex.size)],['Importe adjudicado',eur.format(sum(adj))],['De ello en UTE',eur.format(sum(ute))+' · '+nf.format(ute.length)],
+  ['Licitaciones sin ganar',nf.format(part.length)],['Tasa de éxito',(adj.length+part.length)&&part.length?pc.format(adj.length/(adj.length+part.length)):'—'],['Baja media',bj.length?pc.format(bj.reduce((s,r)=>s+r.baja,0)/bj.length):'—'],['Órganos distintos',nf.format(new Set(rows.map(r=>r.organo)).size)]];
+ $('#kpi').replaceChildren(...K.map(([l,v])=>{const d=document.createElement('div'),s=document.createElement('span'),b=document.createElement('b');s.textContent=l;b.textContent=v;d.append(s,b);return d}));
+ $('#lg1').replaceChildren(...Object.entries(COL).map(([k,c])=>{const s=document.createElement('span'),i=document.createElement('i');i.style.background=c;s.append(i,k);return s}));
+ years($('#c1'),rows);
+ const by=(arr,f)=>{const m=new Map();arr.forEach(r=>{const k=f(r);if(k)m.set(k,(m.get(k)||[]).concat([r]))});return m};
+ hbar($('#c2'),[...by(adj,r=>r.organo)].map(([k,v])=>({l:k,v:sum(v),t:eurF.format(sum(v))+' · '+v.length+' adjudicaciones'})).sort((a,b)=>b.v-a.v).slice(0,15),v=>eur.format(v),d=>{$('#org').value=$('#org').value===d.l?'':d.l;draw()});
+ hbar($('#c3'),[...by(adj,r=>r.tipo)].map(([k,v])=>({l:k,v:sum(v),c:'var(--c4)',t:eurF.format(sum(v))+' · '+v.length})).sort((a,b)=>b.v-a.v),v=>eur.format(v));
+ const sc=new Map();ute.forEach(r=>r.socios.forEach(s=>sc.set(s,(sc.get(s)||0)+1)));
+ hbar($('#c4'),[...sc].map(([k,v])=>({l:k,v,c:COL['Adjudicataria en UTE']})).sort((a,b)=>b.v-a.v).slice(0,15),v=>nf.format(v),d=>{$('#q').value=d.l;draw()});
+ hbar($('#c5'),[...by(rows,r=>r.organo)].map(([k,v])=>{const a=v.filter(r=>r.rel!=='Licitadora (no adjudicataria)').length;return{l:k,v:a/v.length,n:v.length,c:'var(--c3)',t:a+' de '+v.length}}).filter(d=>d.n>=3&&rows.some(r=>r.rel==='Licitadora (no adjudicataria)')).sort((a,b)=>b.n-a.n).slice(0,15),v=>pc.format(v));
+ table()}
+function table(){const rows=filt($('#vx').checked).map(r=>({...r,inc:X.has(r.k)?0:1})),{k,d}=sort;
+ rows.sort((a,b)=>{const x=a[k],y=b[k];if(typeof x==='number'||typeof y==='number')return((x??-1e18)-(y??-1e18))*d;return String(x??'').localeCompare(String(y??''),'es')*d});
+ const tb=$('#tb'),fr=document.createDocumentFragment();
+ rows.forEach(r=>{const tr=document.createElement('tr');if(!r.inc)tr.className='x';const td=(v,c)=>{const e=document.createElement('td');if(c)e.className=c;if(v instanceof Node)e.append(v);else e.textContent=v??'';tr.append(e);return e};
+  const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!r.inc;cb.onchange=()=>{cb.checked?X.delete(r.k):X.add(r.k);saveX();draw()};td(cb);
+  const p=document.createElement('span');p.className='pill';p.style.background=COL[r.rel];p.textContent=r.rel.replace(' (no adjudicataria)','');td(p);
+  td(r.fecha);td(r.organo);td(r.exp,'hide');td(r.titulo+(r.lote?' — Lote '+r.lote+(r.tlote?': '+r.tlote:''):''));td(r.tipo,'hide');
+  td(r.imp!=null?eurF.format(r.imp):'','n');td(r.pres!=null?eurF.format(r.pres):'','n hide');td(r.baja!=null?pc.format(r.baja):'','n hide');td(r.ofertas!=null?nf.format(r.ofertas):'','n hide');
+  const c=td('','hide');if(r.evid){const dt=document.createElement('details'),s=document.createElement('summary');s.textContent='Evidencia: '+r.evdoc;const q=document.createElement('div');q.className='mut';q.textContent='…'+r.evid+'…';dt.append(s,q);
+   if(r.evurl){const a=document.createElement('a');a.href=r.evurl;a.target='_blank';a.rel='noopener';a.textContent='Abrir documento';dt.append(a)}c.append(dt);if(r.adj){const g=document.createElement('div');g.textContent='Ganó: '+r.adj;c.append(g)}}
+  else c.textContent=r.adj+(r.coin?' ('+r.coin+')':'');
+  const l=td('');if(/^https?:\/\//.test(r.link)){const a=document.createElement('a');a.href=r.link;a.target='_blank';a.rel='noopener';a.textContent='Plataforma';l.append(a)}
+  fr.append(tr)});tb.replaceChildren(fr);$('#nx').textContent=X.size?X.size+' fila(s) excluida(s)':'';$('#reac').disabled=!X.size}
+$$('th[data-s]').forEach(th=>th.onclick=()=>{const k=th.dataset.s;sort=sort.k===k?{k,d:-sort.d}:{k,d:['fecha','imp','pres','baja','ofertas'].includes(k)?-1:1};table()});
+$$('.f input,.f select').forEach(e=>e.addEventListener(e.type==='search'?'input':'change',draw));
+$('#reset').onclick=()=>{$$('.rel').forEach(c=>c.checked=true);['#d1','#d2','#org','#tip','#fue','#q'].forEach(s=>$(s).value='');$('#vx').checked=false;draw()};
+const dl=(name,text,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.append(a);a.click();a.remove()};
+$('#csv').onclick=()=>{const cols=['rel','fecha','organo','exp','titulo','lote','tlote','tipo','imp','pres','baja','ofertas','adj','nif','socios','evdoc','evurl','link'];
+ const esc=v=>{v=Array.isArray(v)?v.join(' | '):v==null?'':typeof v==='number'?String(v).replace('.',','):String(v);return/[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ dl(M.id+'.csv','﻿'+[cols.join(';'),...filt(false).map(r=>cols.map(c=>esc(r[c])).join(';'))].join('\n'),'text/csv')};
+$('#reac').onclick=()=>{if(!X.size)return;X.clear();saveX();draw()};
+$('#exx').onclick=()=>dl('exclusiones_'+M.id+'.json',JSON.stringify([...X]),'application/json');
+$('#imx').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{JSON.parse(await f.text()).forEach(k=>X.add(k));saveX();draw()}catch(err){}e.target.value=''};
+addEventListener('resize',()=>{clearTimeout(window._r);window._r=setTimeout(draw,150)});draw();
+</script></body></html>
