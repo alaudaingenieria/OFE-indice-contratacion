@@ -44,7 +44,7 @@ Como publica periodo a periodo, si la sesión se corta no se pierde lo ya hecho.
 - Las releases de GitHub no se pueden crear desde las sesiones de Claude; por eso el índice vive en `data/`.
 - Red: `contrataciondelsectorpublico.gob.es` en los dominios permitidos del entorno (Configuración > Capacidades),
   y GitHub, que suele venir permitido.
-- Disco: ~10 GB libres (un ZIP anual de 2–3 GB más el siguiente en descarga).
+- Disco: ~10 GB libres (los ficheros de un año, 2–3 GB, más los del siguiente en descarga).
 
 ## Calendario
 
@@ -85,7 +85,7 @@ de 7–8 días, la tarea ha dejado de funcionar.
 ## Crecimiento del repositorio
 
 Como nada se regenera, el repositorio crece poco más que el propio índice. Lo único que deja historial extra es
-el relevo de los meses del año por su fichero anual (una vez al año). Quien consume el índice descarga ficheros sueltos y no necesita
+el relevo de los meses del año por su periodo anual (una vez al año). Quien consume el índice descarga ficheros sueltos y no necesita
 clonar, así que el tamaño del historial no le afecta.
 
 ## Ejecución manual
