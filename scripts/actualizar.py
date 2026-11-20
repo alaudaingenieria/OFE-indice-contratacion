@@ -16,7 +16,8 @@ Qué hace:
 Al indexar el anual de un año, se retiran los meses de ese año (el anual los contiene).
 
 Otras opciones: --fuentes perfiles agregadas menores, --periodos 2023 202601 (fuerza esos periodos, p. ej. si
-Hacienda corrige un fichero), --desde 2020, --hasta-mes 9, --zips-locales DIR (usa ZIP ya descargados con nombre <fuente>_<periodo>.zip).
+Hacienda corrige un fichero), --desde 2020, --hasta-mes 9, --zips-locales DIR (usa ZIP ya descargados con nombre <fuente>_<periodo>.zip; un año se puede construir con
+sus 12 ZIP mensuales <fuente>_<AAAAMM>.zip).
 """
 import argparse, datetime, glob, hashlib, json, os, shutil, subprocess, sys, threading, queue, time
 
@@ -122,6 +123,9 @@ def main():
         i = 0
         while i < len(pend) and not stop.is_set():
             f, p, files = pend[i]; i += 1
+            meses_loc = [os.path.join(a.zips_locales or '', f'{f}_{p}{m:02d}.zip') for m in range(1, 13)]
+            if len(p) == 4 and a.zips_locales and all(os.path.exists(x) for x in meses_loc):
+                q.put((f, p, meses_loc, 12)); continue   # año completo a partir de sus 12 meses ya descargados
             ok = [dest for url, dest in files if descargar(url, dest, a.zips_locales)]
             q.put((f, p, ok, len(files)))
             if i == len(pend): q.join()   # da tiempo a que main() añada meses si un anual no existe
@@ -147,7 +151,8 @@ def main():
             r = subprocess.run([sys.executable, os.path.join(AQUI, 'build_indice.py'), '--fuente', f, '--periodo', p, '--zips', *ok, '--out', DATA])
             if r.returncode != 0:
                 log(f'ERROR procesando {f} {p}'); continue
-            for z in ok: os.remove(z)
+            for z in ok:
+                if z.startswith(DESC): os.remove(z)
             man['ficheros'] = [x for x in man.get('ficheros', []) if not (x['fuente'] == f and x['periodo'] == p)]
             if len(p) == 4:   # el anual sustituye a los meses de ese año
                 meses = sorted({x['periodo'] for x in man['ficheros'] if x['fuente'] == f and x['periodo'][:4] == p and len(x['periodo']) == 6})
