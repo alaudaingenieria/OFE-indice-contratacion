@@ -78,7 +78,8 @@ sacyr = adj[adj.adjudicatario.str.contains('SACYR', case=False, na=False)].merge
 
 ## Mantenimiento
 
-El índice se regenera con una **tarea programada** de Claude: ver [TAREA_PROGRAMADA.md](TAREA_PROGRAMADA.md).
+El índice se actualiza con una **tarea programada semanal** de Claude: ver [TAREA_PROGRAMADA.md](TAREA_PROGRAMADA.md).
+Cada ejecución deja una línea en [`registro_actualizaciones.log`](registro_actualizaciones.log), haya cambios o no.
 
 | Script | Para qué |
 |---|---|

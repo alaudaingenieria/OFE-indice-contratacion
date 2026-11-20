@@ -114,13 +114,15 @@ def registrar(estado, detalle, publicar_git):
     man = json.load(open(MAN)) if os.path.exists(MAN) else {'ficheros': []}
     tam = sum(f.get('bytes', 0) for f in man['ficheros']) / 1e9
     ult = max((f['periodo'] for f in man['ficheros'] if len(f['periodo']) == 6), default='-')
-    linea = (f"{datetime.datetime.now():%Y-%m-%d %H:%M} | {estado:<14} | {detalle} | "
+    from zoneinfo import ZoneInfo
+    ahora = datetime.datetime.now(ZoneInfo('Europe/Madrid'))
+    linea = (f"{ahora:%Y-%m-%d %H:%M} | {estado:<14} | {detalle} | "
              f"índice: {len(man['ficheros'])} ficheros, {tam:.2f} GB, último mes {ult}")
     nuevo = not os.path.exists(REGISTRO)
     with open(REGISTRO, 'a', encoding='utf-8') as fh:
         if nuevo:
             fh.write('# Registro de ejecuciones de scripts/actualizar.py (una línea por ejecución)\n'
-                     '# fecha | estado (SIN CAMBIOS / ACTUALIZADO / INCOMPLETO / ERROR) | detalle | estado del índice\n')
+                     '# fecha (hora de Madrid) | estado (SIN CAMBIOS / ACTUALIZADO / INCOMPLETO / ERROR) | detalle | estado del índice\n')
         fh.write(linea + '\n')
     log('Registro:', linea)
     if publicar_git:

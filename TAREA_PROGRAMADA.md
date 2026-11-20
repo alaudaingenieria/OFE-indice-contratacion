@@ -2,7 +2,8 @@
 
 ## Qué hace
 
-Una tarea programada de Claude ejecuta cada noche `scripts/actualizar.py --publicar`. En cada ejecución:
+Una tarea programada de Claude ejecuta **cada semana** (sábados de madrugada) `scripts/actualizar.py --publicar`.
+En cada ejecución:
 
 1. Lee `data/manifest.json` para saber qué hay publicado.
 2. Construye la lista de pendientes, de lo más antiguo a lo más reciente:
@@ -12,11 +13,12 @@ Una tarea programada de Claude ejecuta cada noche `scripts/actualizar.py --publi
 3. Para cada pendiente: descarga el ZIP de Hacienda, genera los tres Parquet en `data/`, actualiza
    `data/manifest.json` y **hace commit y push en cuanto termina ese periodo**. Después borra los temporales.
    Al indexar el anual de un año, retira los meses de ese año.
-4. Se detiene al pasar del tiempo máximo (`--max-horas`, por defecto 5). Lo que falte se hace la noche siguiente.
+4. Se detiene al pasar del tiempo máximo (`--max-horas`, por defecto 5). Lo que falte se hace en la siguiente ejecución.
+5. **Deja constancia en `registro_actualizaciones.log`** (raíz del repositorio) y la publica, haya cambios o no.
 
 **Nada se descarga dos veces.** Los ficheros de Hacienda recogen los cambios de cada periodo (una formalización
 de 2026 de un expediente de 2023 está en el fichero de 2026), así que un año o un mes cerrado no cambia. En
-régimen normal cada noche solo hay trabajo si Hacienda ha publicado un mes nuevo; si no, la tarea termina en un
+régimen normal cada ejecución solo tiene trabajo si Hacienda ha publicado un mes nuevo; si no, termina en un
 minuto. Si Hacienda avisara de que ha corregido un fichero, se fuerza a mano:
 `python3 scripts/actualizar.py --publicar --periodos 2023 --fuentes perfiles`.
 
@@ -44,10 +46,28 @@ y para esos periodos descarga los ZIP de la Plataforma como antes.
   y GitHub, que suele venir permitido.
 - Disco: ~10 GB libres (un ZIP anual de 2–3 GB más el siguiente en descarga).
 
-## Calendario recomendado
+## Calendario
 
-- **Diaria a las 01:37 (Europe/Madrid)**. Durante la carga inicial avanza cada noche; después, las noches sin
-  mes nuevo no hacen nada, y el mes nuevo se recoge en cuanto Hacienda lo publica.
+- **Semanal: sábados a las 01:37 (Europe/Madrid).** Hacienda publica cada mes en los primeros días del siguiente,
+  así que el mes nuevo entra en el índice como mucho una semana después de publicarse.
+
+## Registro de ejecuciones
+
+Cada ejecución añade una línea a `registro_actualizaciones.log` y hace commit y push, **también cuando no hay nada
+nuevo**. Sirve para comprobar de un vistazo que la tarea se está ejecutando cada semana: si la última línea tiene más
+de 7–8 días, la tarea ha dejado de funcionar.
+
+```
+2026-11-21 01:37 | SIN CAMBIOS    | no hay periodos nuevos que indexar | índice: 149 ficheros, 1.09 GB, último mes 202610
+2026-12-05 01:38 | ACTUALIZADO    | publicado: agregadas 202611, menores 202611, perfiles 202611 | índice: …
+```
+
+| Estado | Significado |
+|---|---|
+| `SIN CAMBIOS` | Todo estaba al día. Si Hacienda aún no ha publicado el último mes, lo indica ("Hacienda aún no ha publicado: …") |
+| `ACTUALIZADO` | Se han indexado y publicado periodos nuevos (los enumera) |
+| `INCOMPLETO` | Algo quedó pendiente (límite de tiempo o descarga fallida); se reintenta en la siguiente ejecución |
+| `ERROR` | El script falló; la línea incluye el error |
 
 ## Instrucción de la tarea (prompt)
 
