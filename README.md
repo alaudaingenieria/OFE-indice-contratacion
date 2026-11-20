@@ -1,8 +1,8 @@
 # OFE · Índice de contratación pública
 
 Índice reducido de los **datos abiertos de la Plataforma de Contratación del Sector Público (PLACSP)**,
-pensado para que la skill `OFE-analisis-contratacion-empresa` busque contratos de una empresa en segundos, sin
-descargar decenas de GB cada vez.
+pensado para buscar contratos y adjudicatarios en segundos, sin descargar decenas de GB de ficheros de Hacienda
+cada vez.
 
 Todos los datos proceden de los ficheros públicos de Hacienda
 ([Licitaciones en perfiles del contratante](https://www.hacienda.gob.es/es-ES/GobiernoAbierto/Datos%20Abiertos/Paginas/LicitacionesContratante.aspx)).
@@ -76,20 +76,6 @@ lic, adj = cargar(fuentes=['perfiles', 'agregadas'], desde=2022, hasta=2025)
 sacyr = adj[adj.adjudicatario.str.contains('SACYR', case=False, na=False)].merge(lic, on=['id', 'updated', 'fuente'], how='left')
 ```
 
-## Skill
-
-La carpeta `skill/` contiene los ficheros que usa la skill `OFE-analisis-contratacion-empresa` (los descarga en cada
-uso desde raw.githubusercontent.com) y una copia de su `SKILL.md` para distribuirla:
-
-| Fichero | Para qué |
-|---|---|
-| `buscar_empresa.py` | Busca adjudicaciones de una empresa (y candidatas para participación) en el índice |
-| `leer_indice.py` | Descarga y une el índice (copia de `scripts/leer_indice.py`) |
-| `placsp_empresa.py` | Misma búsqueda sobre ZIP de Hacienda, para periodos aún no indexados |
-| `placsp_participacion.py` | Lee actas e informes de la mesa para detectar participaciones sin adjudicación |
-| `build_informe.py` + `informe_template.html` | Generan el informe HTML autónomo y el CSV |
-| `SKILL.md` | Instrucciones de la skill |
-
 ## Mantenimiento
 
 El índice se regenera con una **tarea programada** de Claude: ver [TAREA_PROGRAMADA.md](TAREA_PROGRAMADA.md).
@@ -98,4 +84,4 @@ El índice se regenera con una **tarea programada** de Claude: ver [TAREA_PROGRA
 |---|---|
 | `scripts/actualizar.py` | Decide qué periodos faltan o están viejos, descarga, genera y publica en `data/` (commit y push por periodo) |
 | `scripts/build_indice.py` | Convierte uno o varios ZIP de la PLACSP en los tres Parquet, en partes de < 45 MB |
-| `scripts/leer_indice.py` | Descarga y une el índice publicado (lo usa la skill) |
+| `scripts/leer_indice.py` | Descarga y une el índice publicado (el punto de entrada recomendado para consumirlo) |
