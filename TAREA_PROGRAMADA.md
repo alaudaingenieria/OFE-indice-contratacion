@@ -31,7 +31,7 @@ El cuello de botella es la descarga desde Hacienda, que varía mucho:
 La **primera carga completa** (2020–2026, tres fuentes) puede tardar de una a varias semanas de ejecuciones
 nocturnas. Después, el mantenimiento normal es un mes nuevo de cada fuente al mes.
 
-Mientras haya periodos sin indexar, la skill lo detecta (`leer_indice.py` avisa de "periodos aún no indexados")
+Mientras haya periodos sin indexar, quien consuma el índice lo detecta (`leer_indice.py` avisa de "periodos aún no indexados")
 y para esos periodos descarga los ZIP de la Plataforma como antes.
 
 ## Requisitos
@@ -65,7 +65,7 @@ y para esos periodos descarga los ZIP de la Plataforma como antes.
 ## Crecimiento del repositorio
 
 Como nada se regenera, el repositorio crece poco más que el propio índice. Lo único que deja historial extra es
-el relevo de los meses del año por su fichero anual (una vez al año). La skill descarga ficheros sueltos y nunca
+el relevo de los meses del año por su fichero anual (una vez al año). Quien consume el índice descarga ficheros sueltos y no necesita
 clona, así que el tamaño del historial no le afecta.
 
 ## Ejecución manual
