@@ -26,15 +26,12 @@ Como publica periodo a periodo, si la sesión se corta no se pierde lo ya hecho.
 
 ## Cuánto tarda
 
-El cuello de botella es la descarga desde Hacienda, que varía mucho:
-- en buenas condiciones (≈5 MB/s) una noche basta para varios años;
-- en noviembre de 2026 llegó a servir a ~0,1 MB/s por conexión, y entonces cabe ~1 año de una fuente por noche.
-
-La **primera carga completa** (2020–2026, tres fuentes) puede tardar de una a varias semanas de ejecuciones
-nocturnas. Después, el mantenimiento normal es un mes nuevo de cada fuente al mes.
-
-Mientras haya periodos sin indexar, quien consuma el índice lo detecta (`leer_indice.py` avisa de "periodos aún no indexados")
-y para esos periodos descarga los ZIP de la Plataforma como antes.
+- La **carga inicial** (2020 a octubre de 2026, tres fuentes) se completó el 20/11/2026.
+- Una ejecución semanal normal dura **minutos**: como mucho, descargar y procesar el mes nuevo de cada fuente.
+- Si hubiera que reindexar un año completo (`--periodos`), son unos 10–15 minutos por año y fuente con buena
+  velocidad de Hacienda. Esa velocidad varía mucho (en noviembre de 2026 llegó a bajar a ~0,1 MB/s por conexión);
+  por eso cada año se descarga como 12 ficheros mensuales en paralelo.
+- Si algún periodo quedara sin indexar, `leer_indice.py` avisa de "periodos aún no indexados".
 
 ## Requisitos
 
