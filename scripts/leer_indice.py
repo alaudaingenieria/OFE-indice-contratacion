@@ -45,14 +45,18 @@ def manifest(d='indice'):
 
 
 def descargar(fuentes, desde, hasta, documentos=False, d='indice'):
+    """Licitaciones y adjudicaciones: todos los periodos desde 'desde' en adelante (los cambios posteriores de un
+    expediente están en periodos más recientes). Documentos: solo de 'desde' a 'hasta'+1, porque pesan más.
+    Los periodos son años (AAAA) o, para el año en curso, meses (AAAAMM)."""
     man = manifest(d)
-    tipos = {'licitaciones', 'adjudicaciones'} | ({'documentos'} if documentos else set())
-    sel = [f for f in man['ficheros'] if f['fuente'] in fuentes and desde <= int(f['periodo']) <= hasta and f['tipo'] in tipos]
-    # Un expediente adjudicado en el rango puede haberse actualizado después: se baja también el año siguiente si existe.
-    extra = [f for f in man['ficheros'] if f['fuente'] in fuentes and int(f['periodo']) == hasta + 1 and f['tipo'] in tipos]
-    for f in sel + extra: _get(f['fichero'], d)
-    faltan = sorted({(fu, str(y)) for fu in fuentes for y in range(desde, hasta + 1)} - {(f['fuente'], f['periodo']) for f in man['ficheros']})
-    return man, sel + extra, faltan
+    yr = lambda f: int(f['periodo'][:4])
+    sel = [f for f in man['ficheros'] if f['fuente'] in fuentes and (
+        (f['tipo'] in ('licitaciones', 'adjudicaciones') and yr(f) >= desde) or
+        (documentos and f['tipo'] == 'documentos' and desde <= yr(f) <= hasta + 1))]
+    for f in sel: _get(f['fichero'], d)
+    cubiertos = {(f['fuente'], f['periodo'][:4]) for f in man['ficheros']}
+    faltan = sorted({(fu, str(y)) for fu in fuentes for y in range(desde, hasta + 1)} - cubiertos)
+    return man, sel, faltan
 
 
 def cargar(fuentes, desde, hasta, documentos=False, d='indice'):

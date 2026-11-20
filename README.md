@@ -27,8 +27,13 @@ descargar el manifest y los ficheros que se necesiten, como hace `scripts/leer_i
 
 ### Periodos
 
-- `2020` … año anterior: un fichero por año, generado a partir del ZIP anual.
-- Año en curso (p. ej. `2026`): acumulado de los meses ya publicados; se regenera cada mes (campo `meses` en el manifest).
+- `2020` … año anterior: un periodo por año, generado a partir del ZIP anual de Hacienda.
+- Año en curso: un periodo por mes (`202601`, `202602`…), según los va publicando Hacienda (primeros días del mes
+  siguiente). Cuando Hacienda publica el anual, este sustituye a los meses de ese año.
+
+Los ficheros de Hacienda recogen **los cambios registrados en cada periodo**: una formalización en 2026 de un
+expediente licitado en 2023 aparece en el periodo de 2026. Por eso los periodos cerrados no se regeneran, y para
+ver la situación actual de un expediente hay que cargar también los periodos posteriores.
 
 ### Ficheros (por fuente y periodo)
 
@@ -48,8 +53,8 @@ Los códigos (`tipo`, `procedimiento`, `resultado`, `estado`, `urgencia`) son lo
 - **Un expediente aparece en varios periodos** (cada vez que se actualiza). Al unir periodos, quédate con la fila
   de `updated` más reciente por `id`; en `adjudicaciones`, con todas las filas de esa última versión.
   `scripts/leer_indice.py` ya lo hace.
-- Para adjudicaciones dentro de un rango de fechas, carga también el periodo siguiente: un expediente puede
-  adjudicarse o formalizarse después.
+- Para un rango de fechas, carga también **todos los periodos posteriores** (licitaciones y adjudicaciones son
+  pequeños): ahí están los cambios posteriores de esos expedientes. `leer_indice.py` lo hace.
 - **Prefijos**: para ahorrar espacio, las URLs largas van abreviadas. `scripts/leer_indice.py` (`url_completa`)
   las reconstruye:
 

@@ -6,15 +6,17 @@ Uso habitual (tarea programada, desde la raíz del repositorio):
 
 Qué hace:
   1. Lee data/manifest.json para saber qué periodos hay y cuándo se generaron.
-  2. Decide qué falta: años cerrados (2020..año anterior) que no estén, años cerrados con más de
-     --refresco-dias de antigüedad y, siempre, el año en curso (meses publicados hasta el mes anterior).
-  3. Para cada fuente y periodo pendiente: descarga el ZIP (o los mensuales) de Hacienda, genera los Parquet
+  2. Decide qué falta: años cerrados (2020..año anterior) cuyo fichero anual no esté indexado y, del año en
+     curso, los meses ya publicados que no estén indexados. Lo ya indexado no se vuelve a descargar.
+  3. Para cada fuente y periodo pendiente: descarga el ZIP de Hacienda, genera los Parquet
      con build_indice.py en data/, actualiza data/manifest.json, borra los ZIP y, con --publicar, hace
      commit y push de ese periodo.
   4. Se detiene al superar --max-horas; lo que quede se hará en la siguiente ejecución.
 
-Otras opciones: --fuentes perfiles agregadas menores, --periodos 2023 2024 (fuerza esos periodos),
---desde 2020, --refresco-dias 120, --hasta-mes 9, --zips-locales DIR (usa ZIP ya descargados con nombre <fuente>_<periodo>.zip).
+Al indexar el anual de un año, se retiran los meses de ese año (el anual los contiene).
+
+Otras opciones: --fuentes perfiles agregadas menores, --periodos 2023 202601 (fuerza esos periodos, p. ej. si
+Hacienda corrige un fichero), --desde 2020, --hasta-mes 9, --zips-locales DIR (usa ZIP ya descargados con nombre <fuente>_<periodo>.zip).
 """
 import argparse, datetime, glob, hashlib, json, os, shutil, subprocess, sys, threading, queue, time
 
@@ -64,37 +66,47 @@ def descargar(url, dest, locales):
 
 
 def pendientes(a, man):
+    """Lista de (fuente, periodo, [(url, destino)]) a procesar.
+
+    - Años cerrados (desde..año anterior): se procesa el fichero ANUAL si aún no está en el índice. Si Hacienda
+      todavía no lo ha publicado (enero), se cubren con los meses que falten.
+    - Año en curso: un periodo por mes (AAAAMM), solo los meses publicados que no estén ya en el índice.
+    - Un periodo ya indexado no se vuelve a descargar salvo que se pida con --periodos (p. ej. si Hacienda
+      corrige un año).
+    """
     hoy = datetime.date.today(); y = hoy.year
-    hay, fecha = {}, {}
+    hay = {}
     for f in man.get('ficheros', []):
         hay.setdefault((f['fuente'], f['periodo']), set()).add(f['tipo'])
-        fecha[(f['fuente'], f['periodo'])] = f.get('generado', '')[:10]
+    completo = lambda fu, p: hay.get((fu, p), set()) == set(TIPOS)
+    zipurl = lambda fu, p: (BASE + FUENTES[fu].format(p=p), os.path.join(DESC, f'{fu}_{p}.zip'))
     out = []
     for fu in a.fuentes:
         if a.periodos:
-            pers = a.periodos
-        else:
-            pers = []
-            for p in map(str, range(a.desde, y)):
-                fe = fecha.get((fu, p), '')
-                viejo = not fe or (hoy - datetime.date.fromisoformat(fe)).days > a.refresco_dias
-                if hay.get((fu, p), set()) != set(TIPOS) or viejo: pers.append(p)
-            pers.append(str(y))
-        for p in pers:
-            if p == str(y):
-                meses = [f'{y}{m:02d}' for m in range(1, min(hoy.month, (a.hasta_mes or 12) + 1))]
-                out.append((fu, p, [(BASE + FUENTES[fu].format(p=m), os.path.join(DESC, f'{fu}_{m}.zip')) for m in meses]))
-            else:
-                out.append((fu, p, [(BASE + FUENTES[fu].format(p=p), os.path.join(DESC, f'{fu}_{p}.zip'))]))
-    # primero lo que no existe, después el año en curso y los refrescos
-    out.sort(key=lambda t: (set(TIPOS) <= hay.get((t[0], t[1]), set()), t[1] == str(y), t[1], t[0]))
+            out += [(fu, p, [zipurl(fu, p)]) for p in a.periodos]
+            continue
+        for yr in range(a.desde, y):
+            if not completo(fu, str(yr)):
+                out.append((fu, str(yr), [zipurl(fu, str(yr))]))   # si el anual da 404, main() recurre a los meses
+        ult = min(hoy.month - 1, a.hasta_mes or 12)
+        for m in range(1, ult + 1):
+            p = f'{y}{m:02d}'
+            if not completo(fu, p): out.append((fu, p, [zipurl(fu, p)]))
+    out.sort(key=lambda t: (t[1][:4], len(t[1]), t[1], t[0]))
     return out
+
+
+def retirar(man, f, periodos):
+    """Quita del índice (ficheros y manifest) los periodos indicados de una fuente."""
+    for p in periodos:
+        for fp in glob.glob(os.path.join(DATA, f'*_{f}_{p}_p*.parquet')): os.remove(fp)
+    man['ficheros'] = [x for x in man.get('ficheros', []) if not (x['fuente'] == f and x['periodo'] in periodos)]
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--fuentes', nargs='+', default=list(FUENTES)); ap.add_argument('--periodos', nargs='+')
-    ap.add_argument('--desde', type=int, default=2020); ap.add_argument('--refresco-dias', type=int, default=120)
+    ap.add_argument('--desde', type=int, default=2020)
     ap.add_argument('--max-horas', type=float, default=5); ap.add_argument('--publicar', action='store_true')
     ap.add_argument('--zips-locales'); ap.add_argument('--hasta-mes', type=int, help='año en curso: último mes a incluir')
     a = ap.parse_args()
@@ -102,45 +114,61 @@ def main():
     os.makedirs(DESC, exist_ok=True); os.makedirs(DATA, exist_ok=True)
     man = json.load(open(MAN)) if os.path.exists(MAN) else {'ficheros': []}
     tr = pendientes(a, man)
-    log(f'{len(tr)} periodos pendientes:', ', '.join(f'{f} {p}' for f, p, _ in tr))
+    log(f'{len(tr)} periodos pendientes:', ', '.join(f'{f} {p}' for f, p, _ in tr) or 'ninguno')
+    pend = tr
     q = queue.Queue(maxsize=1); stop = threading.Event()
 
     def productor():
-        for f, p, files in tr:
-            if stop.is_set(): break
+        i = 0
+        while i < len(pend) and not stop.is_set():
+            f, p, files = pend[i]; i += 1
             ok = [dest for url, dest in files if descargar(url, dest, a.zips_locales)]
             q.put((f, p, ok, len(files)))
+            if i == len(pend): q.join()   # da tiempo a que main() añada meses si un anual no existe
         q.put(None)
     threading.Thread(target=productor, daemon=True).start()
     hechos = []
     import pandas as pd
     while True:
         it = q.get()
-        if it is None: break
-        f, p, ok, n = it
-        log(f'{f} {p}: {len(ok)}/{n} ficheros descargados')
-        if not ok: continue
-        r = subprocess.run([sys.executable, os.path.join(AQUI, 'build_indice.py'), '--fuente', f, '--periodo', p, '--zips', *ok, '--out', DATA])
-        if r.returncode != 0:
-            log(f'ERROR procesando {f} {p}'); continue
-        for z in ok: os.remove(z)
-        man['ficheros'] = [x for x in man.get('ficheros', []) if not (x['fuente'] == f and x['periodo'] == p)]
-        for fp in sorted(glob.glob(os.path.join(DATA, f'*_{f}_{p}_p*.parquet'))):
-            nm = os.path.basename(fp)
-            man['ficheros'].append({'fichero': nm, 'tipo': nm.split('_')[0], 'fuente': f, 'periodo': p,
-                                    'parte': int(nm.rsplit('_p', 1)[1][:-8]),
-                                    'meses': len(ok) if p == str(datetime.date.today().year) else 12,
-                                    'filas': pd.read_parquet(fp, columns=['id']).shape[0], 'bytes': os.path.getsize(fp),
-                                    'sha256': hashlib.sha256(open(fp, 'rb').read()).hexdigest(),
-                                    'generado': datetime.date.today().isoformat()})
-        man['generado'] = datetime.datetime.now().isoformat(timespec='seconds')
-        man['ficheros'].sort(key=lambda x: (x['fuente'], x['periodo'], x['tipo'], x.get('parte', 1)))
-        json.dump(man, open(MAN, 'w'), indent=1, ensure_ascii=False)
-        if a.publicar:
-            publicar(f'Índice: {f} {p}'); log(f'publicado {f} {p}')
-        hechos.append(f'{f} {p}')
-        if (time.time() - t0) / 3600 > a.max_horas:
-            log(f'Límite de {a.max_horas} h alcanzado; el resto queda para la próxima ejecución.'); stop.set(); break
+        try:
+            if it is None: break
+            f, p, ok, n = it
+            log(f'{f} {p}: {len(ok)}/{n} ficheros descargados')
+            if not ok:
+                if len(p) == 4 and not a.periodos:   # anual aún no publicado: cubrir ese año con sus meses
+                    hay = {(x['fuente'], x['periodo']) for x in man.get('ficheros', [])}
+                    extra = [(f, f'{p}{m:02d}', [(BASE + FUENTES[f].format(p=f'{p}{m:02d}'), os.path.join(DESC, f'{f}_{p}{m:02d}.zip'))])
+                             for m in range(1, 13) if (f, f'{p}{m:02d}') not in hay]
+                    if extra:
+                        log(f'{f} {p}: anual no disponible; se usan {len(extra)} meses')
+                        pend.extend(extra)
+                continue
+            r = subprocess.run([sys.executable, os.path.join(AQUI, 'build_indice.py'), '--fuente', f, '--periodo', p, '--zips', *ok, '--out', DATA])
+            if r.returncode != 0:
+                log(f'ERROR procesando {f} {p}'); continue
+            for z in ok: os.remove(z)
+            man['ficheros'] = [x for x in man.get('ficheros', []) if not (x['fuente'] == f and x['periodo'] == p)]
+            if len(p) == 4:   # el anual sustituye a los meses de ese año
+                meses = sorted({x['periodo'] for x in man['ficheros'] if x['fuente'] == f and x['periodo'][:4] == p and len(x['periodo']) == 6})
+                if meses: retirar(man, f, meses); log(f'{f} {p}: retirados los meses {meses[0]}–{meses[-1]}')
+            for fp in sorted(glob.glob(os.path.join(DATA, f'*_{f}_{p}_p*.parquet'))):
+                nm = os.path.basename(fp)
+                man['ficheros'].append({'fichero': nm, 'tipo': nm.split('_')[0], 'fuente': f, 'periodo': p,
+                                        'parte': int(nm.rsplit('_p', 1)[1][:-8]),
+                                        'filas': pd.read_parquet(fp, columns=['id']).shape[0], 'bytes': os.path.getsize(fp),
+                                        'sha256': hashlib.sha256(open(fp, 'rb').read()).hexdigest(),
+                                        'generado': datetime.date.today().isoformat()})
+            man['generado'] = datetime.datetime.now().isoformat(timespec='seconds')
+            man['ficheros'].sort(key=lambda x: (x['fuente'], x['periodo'], x['tipo'], x.get('parte', 1)))
+            json.dump(man, open(MAN, 'w'), indent=1, ensure_ascii=False)
+            if a.publicar:
+                publicar(f'Índice: {f} {p}'); log(f'publicado {f} {p}')
+            hechos.append(f'{f} {p}')
+            if (time.time() - t0) / 3600 > a.max_horas:
+                log(f'Límite de {a.max_horas} h alcanzado; el resto queda para la próxima ejecución.'); stop.set(); break
+        finally:
+            q.task_done()
     log('Terminado. Hechos:', ', '.join(hechos) or 'ninguno')
 
 
