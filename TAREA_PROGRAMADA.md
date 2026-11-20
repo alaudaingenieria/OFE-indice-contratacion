@@ -66,7 +66,7 @@ y para esos periodos descarga los ZIP de la Plataforma como antes.
 
 Como nada se regenera, el repositorio crece poco más que el propio índice. Lo único que deja historial extra es
 el relevo de los meses del año por su fichero anual (una vez al año). Quien consume el índice descarga ficheros sueltos y no necesita
-clona, así que el tamaño del historial no le afecta.
+clonar, así que el tamaño del historial no le afecta.
 
 ## Ejecución manual
 
