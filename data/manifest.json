@@ -628,6 +628,39 @@
    "generado": "2026-11-20"
   },
   {
+   "fichero": "adjudicaciones_menores_2018_p01.parquet",
+   "tipo": "adjudicaciones",
+   "fuente": "menores",
+   "periodo": "2018",
+   "parte": 1,
+   "filas": 161681,
+   "bytes": 4623174,
+   "sha256": "624d9e51c535c987e212a556e66ea48fba21b48f3e566e8b7bab72c156038d91",
+   "generado": "2026-11-21"
+  },
+  {
+   "fichero": "documentos_menores_2018_p01.parquet",
+   "tipo": "documentos",
+   "fuente": "menores",
+   "periodo": "2018",
+   "parte": 1,
+   "filas": 160305,
+   "bytes": 1272561,
+   "sha256": "41dd66c45dd60e88cdc534e56c17769acb63981caa9518e45854245805a2f93c",
+   "generado": "2026-11-21"
+  },
+  {
+   "fichero": "licitaciones_menores_2018_p01.parquet",
+   "tipo": "licitaciones",
+   "fuente": "menores",
+   "periodo": "2018",
+   "parte": 1,
+   "filas": 160305,
+   "bytes": 9692487,
+   "sha256": "c7357d440c7bb7cb511609ce02f0bab578b7b8603359a1c70cb6c0c7a153a457",
+   "generado": "2026-11-21"
+  },
+  {
    "fichero": "adjudicaciones_menores_2020_p01.parquet",
    "tipo": "adjudicaciones",
    "fuente": "menores",
@@ -1937,5 +1970,5 @@
    "generado": "2026-11-20"
   }
  ],
- "generado": "2026-11-21T00:17:15"
+ "generado": "2026-11-21T00:19:02"
 }
