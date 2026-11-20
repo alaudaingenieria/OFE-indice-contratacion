@@ -15,6 +15,7 @@ import argparse, json, os, subprocess
 
 REPO = 'alaudaingenieria/ofe-indice-contratacion'
 URL = f'https://raw.githubusercontent.com/{REPO}/main/data/'
+INICIO = {'perfiles': 2012, 'agregadas': 2016, 'menores': 2018}   # primer año con datos en Hacienda
 PREFIJOS = {
     'D:': 'https://contrataciondelsectorpublico.gob.es/wps/wcm/connect/PLACE_es/Site/area/docAccCmpnt?srv=cmpnt&cmpntname=GetDocumentsById&source=library&DocumentIdParam=',
     'F:': 'https://contrataciondelsectorpublico.gob.es/FileSystem/servlet/GetDocumentByIdServlet?DocumentIdParam=',
@@ -55,7 +56,7 @@ def descargar(fuentes, desde, hasta, documentos=False, d='indice'):
         (documentos and f['tipo'] == 'documentos' and desde <= yr(f) <= hasta + 1))]
     for f in sel: _get(f['fichero'], d)
     cubiertos = {(f['fuente'], f['periodo'][:4]) for f in man['ficheros']}
-    faltan = sorted({(fu, str(y)) for fu in fuentes for y in range(desde, hasta + 1)} - cubiertos)
+    faltan = sorted({(fu, str(y)) for fu in fuentes for y in range(max(desde, INICIO.get(fu, desde)), hasta + 1)} - cubiertos)
     return man, sel, faltan
 
 
