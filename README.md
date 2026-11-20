@@ -10,10 +10,12 @@ Aquí no hay información interna: el repositorio y sus datos son públicos.
 
 ## Dónde están los datos
 
-En la release **`datos`** del repositorio (no en el código, por tamaño):
-`https://github.com/alaudaingenieria/ofe-indice-contratacion/releases/download/datos/<fichero>`
+En la carpeta **`data/`** de este repositorio. Se descargan sin cuenta:
+`https://raw.githubusercontent.com/alaudaingenieria/ofe-indice-contratacion/main/data/<fichero>`
 
-`manifest.json` lista los ficheros publicados, con periodo, filas, tamaño, sha256 y fecha de generación.
+`data/manifest.json` lista los ficheros publicados, con periodo, parte, filas, tamaño, sha256, meses incluidos y
+fecha de generación. Para usar el índice **no hace falta clonar el repositorio** (crecerá con el tiempo): basta con
+descargar el manifest y los ficheros que se necesiten, como hace `scripts/leer_indice.py`.
 
 ### Fuentes
 
@@ -30,11 +32,14 @@ En la release **`datos`** del repositorio (no en el código, por tamaño):
 
 ### Ficheros (por fuente y periodo)
 
+Cada fichero se divide en partes de menos de 45 MB (`_p01`, `_p02`…), porque GitHub no admite ficheros de más
+de 100 MB. Une todas las partes de un mismo tipo, fuente y periodo.
+
 | Fichero | Una fila por | Columnas principales |
 |---|---|---|
-| `licitaciones_<fuente>_<periodo>.parquet` | expediente | `id`, `updated`, `expediente`, `organo`, `organo_nif`, `organo_superior`, `titulo`, `link`, `estado`, `tipo`, `subtipo`, `procedimiento`, `urgencia`, `cpv`, `provincia`, `nuts`, `presupuesto_sin_iva`, `presupuesto_con_iva`, `valor_estimado`, `duracion`, `duracion_unidad`, `prorroga_texto`, `fecha_anuncio`, `fecha_primera_publicacion`, `n_lotes` |
-| `adjudicaciones_<fuente>_<periodo>.parquet` | lote y adjudicatario | `id`, `updated`, `lote`, `titulo_lote`, `presupuesto_lote_sin_iva`, `resultado`, `fecha_adjudicacion`, `fecha_formalizacion`, `importe_adjudicado_sin_iva`, `importe_adjudicado_con_iva`, `n_ofertas`, `oferta_mas_baja`, `oferta_mas_alta`, `adjudicatario`, `nif_adjudicatario` |
-| `documentos_<fuente>_<periodo>.parquet` | expediente | `id`, `updated`, `docs_pliegos` y `docs_mesa` (JSON: lista de `[nombre, url]`) |
+| `licitaciones_<fuente>_<periodo>_pNN.parquet` | expediente | `id`, `updated`, `expediente`, `organo`, `organo_nif`, `organo_superior`, `titulo`, `link`, `estado`, `tipo`, `subtipo`, `procedimiento`, `urgencia`, `cpv`, `provincia`, `nuts`, `presupuesto_sin_iva`, `presupuesto_con_iva`, `valor_estimado`, `duracion`, `duracion_unidad`, `prorroga_texto`, `fecha_anuncio`, `fecha_primera_publicacion`, `n_lotes` |
+| `adjudicaciones_<fuente>_<periodo>_pNN.parquet` | lote y adjudicatario | `id`, `updated`, `lote`, `titulo_lote`, `presupuesto_lote_sin_iva`, `resultado`, `fecha_adjudicacion`, `fecha_formalizacion`, `importe_adjudicado_sin_iva`, `importe_adjudicado_con_iva`, `n_ofertas`, `oferta_mas_baja`, `oferta_mas_alta`, `adjudicatario`, `nif_adjudicatario` |
+| `documentos_<fuente>_<periodo>_pNN.parquet` | expediente | `id`, `updated`, `docs_pliegos` y `docs_mesa` (JSON: lista de `[nombre, url]`) |
 
 Los códigos (`tipo`, `procedimiento`, `resultado`, `estado`, `urgencia`) son los de la especificación CODICE de la PLACSP.
 
@@ -72,6 +77,6 @@ El índice se regenera con una **tarea programada** de Claude: ver [TAREA_PROGRA
 
 | Script | Para qué |
 |---|---|
-| `scripts/actualizar.py` | Decide qué periodos faltan o están viejos, descarga, genera y publica en la release `datos` |
-| `scripts/build_indice.py` | Convierte uno o varios ZIP de la PLACSP en los tres Parquet |
+| `scripts/actualizar.py` | Decide qué periodos faltan o están viejos, descarga, genera y publica en `data/` (commit y push por periodo) |
+| `scripts/build_indice.py` | Convierte uno o varios ZIP de la PLACSP en los tres Parquet, en partes de < 45 MB |
 | `scripts/leer_indice.py` | Descarga y une el índice publicado (lo usa la skill) |
