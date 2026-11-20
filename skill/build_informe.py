@@ -42,7 +42,7 @@ def main():
         imp = r.get('importe_adjudicado_sin_iva')
         data.append({
             'k': f"{r.get('id')}|{r.get('lote', '')}|{i}", 'rel': r['relacion'], 'fuente': r.get('fuente', ''),
-            'fecha': r.get('fecha_adjudicacion') or r.get('fecha_anuncio') or '', 'fanuncio': r.get('fecha_anuncio', ''),
+            'fecha': r.get('fecha_adjudicacion') or r.get('fecha_formalizacion') or r.get('fecha_anuncio') or '', 'fanuncio': r.get('fecha_anuncio', ''),
             'organo': r.get('organo', ''), 'exp': r.get('expediente', ''), 'titulo': r.get('titulo', ''),
             'lote': r.get('lote', ''), 'tlote': r.get('titulo_lote', ''), 'tipo': r.get('tipo', '') or 'Sin dato',
             'proc': r.get('procedimiento', ''), 'cpv': r.get('cpv', ''), 'prov': r.get('provincia', ''),

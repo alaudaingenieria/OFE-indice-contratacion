@@ -85,7 +85,7 @@ def main():
         if r['id'] not in L: continue
         b = base(r['id'])
         if not ok(b): continue
-        fecha = r['fecha_adjudicacion'] or b['fecha_anuncio']
+        fecha = r['fecha_adjudicacion'] or r['fecha_formalizacion'] or b['fecha_anuncio']   # las agregadas a veces no traen fecha de adjudicación
         if not (a.desde <= (fecha or '') <= a.hasta): continue
         rows.append({**b, 'relacion': 'Adjudicataria' + (' en UTE' if PE.is_ute(r['nif_adjudicatario'], r['adjudicatario']) else ''),
                      'coincidencia': r['coincidencia'], 'adjudicatario': r['adjudicatario'], 'nif_adjudicatario': r['nif_adjudicatario'],

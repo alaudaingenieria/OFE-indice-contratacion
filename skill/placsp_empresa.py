@@ -197,7 +197,7 @@ if __name__ == '__main__':
             adj += x; cand += c
             print(f'{i + 1}/{len(items)} {items[i][0]}: {len(x)} adjudicaciones, {len(c)} candidatas', file=sys.stderr)
     adj = dedupe(adj, lambda r: (r['id'], r['lote'], r['nif_adjudicatario'], r['adjudicatario']))
-    adj = [r for r in adj if a.desde <= (r['fecha_adjudicacion'] or r['fecha_anuncio']) <= a.hasta]
+    adj = [r for r in adj if a.desde <= (r['fecha_adjudicacion'] or r['fecha_formalizacion'] or r['fecha_anuncio']) <= a.hasta]
     cand = dedupe(cand, lambda r: r['id'])
     ganadas = {r['id'] for r in adj}
     cand = [r for r in cand if r['id'] not in ganadas and a.desde <= r['fecha_anuncio'] <= a.hasta]
