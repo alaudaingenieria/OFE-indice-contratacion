@@ -1,0 +1,77 @@
+# OFE · Índice de contratación pública
+
+Índice reducido de los **datos abiertos de la Plataforma de Contratación del Sector Público (PLACSP)**,
+pensado para que la skill `OFE-analisis-contratacion-empresa` busque contratos de una empresa en segundos, sin
+descargar decenas de GB cada vez.
+
+Todos los datos proceden de los ficheros públicos de Hacienda
+([Licitaciones en perfiles del contratante](https://www.hacienda.gob.es/es-ES/GobiernoAbierto/Datos%20Abiertos/Paginas/LicitacionesContratante.aspx)).
+Aquí no hay información interna: el repositorio y sus datos son públicos.
+
+## Dónde están los datos
+
+En la release **`datos`** del repositorio (no en el código, por tamaño):
+`https://github.com/alaudaingenieria/ofe-indice-contratacion/releases/download/datos/<fichero>`
+
+`manifest.json` lista los ficheros publicados, con periodo, filas, tamaño, sha256 y fecha de generación.
+
+### Fuentes
+
+| `fuente` | Conjunto de la PLACSP |
+|---|---|
+| `perfiles` | Licitaciones de perfiles alojados en la Plataforma (sindicación 643) |
+| `agregadas` | Plataformas autonómicas agregadas, sin menores (sindicación 1044) |
+| `menores` | Contratos menores (sindicación 1143) |
+
+### Periodos
+
+- `2020` … año anterior: un fichero por año, generado a partir del ZIP anual.
+- Año en curso (p. ej. `2026`): acumulado de los meses ya publicados; se regenera cada mes (campo `meses` en el manifest).
+
+### Ficheros (por fuente y periodo)
+
+| Fichero | Una fila por | Columnas principales |
+|---|---|---|
+| `licitaciones_<fuente>_<periodo>.parquet` | expediente | `id`, `updated`, `expediente`, `organo`, `organo_nif`, `organo_superior`, `titulo`, `link`, `estado`, `tipo`, `subtipo`, `procedimiento`, `urgencia`, `cpv`, `provincia`, `nuts`, `presupuesto_sin_iva`, `presupuesto_con_iva`, `valor_estimado`, `duracion`, `duracion_unidad`, `prorroga_texto`, `fecha_anuncio`, `fecha_primera_publicacion`, `n_lotes` |
+| `adjudicaciones_<fuente>_<periodo>.parquet` | lote y adjudicatario | `id`, `updated`, `lote`, `titulo_lote`, `presupuesto_lote_sin_iva`, `resultado`, `fecha_adjudicacion`, `fecha_formalizacion`, `importe_adjudicado_sin_iva`, `importe_adjudicado_con_iva`, `n_ofertas`, `oferta_mas_baja`, `oferta_mas_alta`, `adjudicatario`, `nif_adjudicatario` |
+| `documentos_<fuente>_<periodo>.parquet` | expediente | `id`, `updated`, `docs_pliegos` y `docs_mesa` (JSON: lista de `[nombre, url]`) |
+
+Los códigos (`tipo`, `procedimiento`, `resultado`, `estado`, `urgencia`) son los de la especificación CODICE de la PLACSP.
+
+### Reglas para usarlo bien
+
+- **Un expediente aparece en varios periodos** (cada vez que se actualiza). Al unir periodos, quédate con la fila
+  de `updated` más reciente por `id`; en `adjudicaciones`, con todas las filas de esa última versión.
+  `scripts/leer_indice.py` ya lo hace.
+- Para adjudicaciones dentro de un rango de fechas, carga también el periodo siguiente: un expediente puede
+  adjudicarse o formalizarse después.
+- **Prefijos**: para ahorrar espacio, las URLs largas van abreviadas. `scripts/leer_indice.py` (`url_completa`)
+  las reconstruye:
+
+| Prefijo | Equivale a |
+|---|---|
+| `D:` | `https://contrataciondelsectorpublico.gob.es/wps/wcm/connect/PLACE_es/Site/area/docAccCmpnt?srv=cmpnt&cmpntname=GetDocumentsById&source=library&DocumentIdParam=` |
+| `F:` | `https://contrataciondelsectorpublico.gob.es/FileSystem/servlet/GetDocumentByIdServlet?DocumentIdParam=` |
+| `L:` | `https://contrataciondelsectorpublico.gob.es/wps/poc?uri=deeplink:detalle_licitacion&idEvl=` |
+| `S:` | `https://contrataciondelsectorpublico.gob.es/sindicacion/` |
+
+  Para descargar un documento desde un script, envía un User-Agent de navegador: la Plataforma rechaza los demás.
+
+## Uso rápido
+
+```python
+import sys; sys.path.insert(0, 'scripts')
+from leer_indice import cargar
+lic, adj = cargar(fuentes=['perfiles', 'agregadas'], desde=2022, hasta=2025)
+sacyr = adj[adj.adjudicatario.str.contains('SACYR', case=False, na=False)].merge(lic, on=['id', 'updated', 'fuente'], how='left')
+```
+
+## Mantenimiento
+
+El índice se regenera con una **tarea programada** de Claude: ver [TAREA_PROGRAMADA.md](TAREA_PROGRAMADA.md).
+
+| Script | Para qué |
+|---|---|
+| `scripts/actualizar.py` | Decide qué periodos faltan o están viejos, descarga, genera y publica en la release `datos` |
+| `scripts/build_indice.py` | Convierte uno o varios ZIP de la PLACSP en los tres Parquet |
+| `scripts/leer_indice.py` | Descarga y une el índice publicado (lo usa la skill) |
