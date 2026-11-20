@@ -6,7 +6,8 @@ Uso habitual (tarea programada, desde la raíz del repositorio):
 
 Qué hace:
   1. Lee data/manifest.json para saber qué periodos hay y cuándo se generaron.
-  2. Decide qué falta: años cerrados (2020..año anterior) cuyo fichero anual no esté indexado y, del año en
+  2. Decide qué falta: años cerrados (2020..año anterior) que no estén indexados (se construyen con sus 12 ZIP
+     mensuales, descargados en paralelo) y, del año en
      curso, los meses ya publicados que no estén indexados. Lo ya indexado no se vuelve a descargar.
   3. Para cada fuente y periodo pendiente: descarga el ZIP de Hacienda, genera los Parquet
      con build_indice.py en data/, actualiza data/manifest.json, borra los ZIP y, con --publicar, hace
@@ -69,8 +70,9 @@ def descargar(url, dest, locales):
 def pendientes(a, man):
     """Lista de (fuente, periodo, [(url, destino)]) a procesar.
 
-    - Años cerrados (desde..año anterior): se procesa el fichero ANUAL si aún no está en el índice. Si Hacienda
-      todavía no lo ha publicado (enero), se cubren con los meses que falten.
+    - Años cerrados (desde..año anterior) que no estén en el índice: se construyen con sus 12 ficheros
+      mensuales, descargados en paralelo (mismo contenido que el anual y mucho más rápido: el servidor limita la
+      velocidad por conexión y no admite descargas por trozos).
     - Año en curso: un periodo por mes (AAAAMM), solo los meses publicados que no estén ya en el índice.
     - Un periodo ya indexado no se vuelve a descargar salvo que se pida con --periodos (p. ej. si Hacienda
       corrige un año).
@@ -84,11 +86,11 @@ def pendientes(a, man):
     out = []
     for fu in a.fuentes:
         if a.periodos:
-            out += [(fu, p, [zipurl(fu, p)]) for p in a.periodos]
+            out += [(fu, p, [zipurl(fu, f'{p}{m:02d}') for m in range(1, 13)] if len(p) == 4 else [zipurl(fu, p)]) for p in a.periodos]
             continue
         for yr in range(a.desde, y):
-            if not completo(fu, str(yr)):
-                out.append((fu, str(yr), [zipurl(fu, str(yr))]))   # si el anual da 404, main() recurre a los meses
+            if not completo(fu, str(yr)):   # el año se construye con sus 12 ficheros mensuales, descargados en paralelo
+                out.append((fu, str(yr), [zipurl(fu, f'{yr}{m:02d}') for m in range(1, 13)]))
         ult = min(hoy.month - 1, a.hasta_mes or 12)
         for m in range(1, ult + 1):
             p = f'{y}{m:02d}'
@@ -126,7 +128,14 @@ def main():
             meses_loc = [os.path.join(a.zips_locales or '', f'{f}_{p}{m:02d}.zip') for m in range(1, 13)]
             if len(p) == 4 and a.zips_locales and all(os.path.exists(x) for x in meses_loc):
                 q.put((f, p, meses_loc, 12)); continue   # año completo a partir de sus 12 meses ya descargados
-            ok = [dest for url, dest in files if descargar(url, dest, a.zips_locales)]
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(12) as ex:
+                res = list(ex.map(lambda t: descargar(t[0], t[1], a.zips_locales), files))
+            ok = [d for (u, d), r in zip(files, res) if r]
+            if len(p) == 4 and len(ok) < len(files):   # año incompleto: no se publica a medias
+                log(f'{f} {p}: solo {len(ok)}/{len(files)} meses descargados; se deja para la próxima ejecución')
+                for d in ok: os.remove(d)
+                ok = []
             q.put((f, p, ok, len(files)))
             if i == len(pend): q.join()   # da tiempo a que main() añada meses si un anual no existe
         q.put(None)
@@ -140,13 +149,6 @@ def main():
             f, p, ok, n = it
             log(f'{f} {p}: {len(ok)}/{n} ficheros descargados')
             if not ok:
-                if len(p) == 4 and not a.periodos:   # anual aún no publicado: cubrir ese año con sus meses
-                    hay = {(x['fuente'], x['periodo']) for x in man.get('ficheros', [])}
-                    extra = [(f, f'{p}{m:02d}', [(BASE + FUENTES[f].format(p=f'{p}{m:02d}'), os.path.join(DESC, f'{f}_{p}{m:02d}.zip'))])
-                             for m in range(1, 13) if (f, f'{p}{m:02d}') not in hay]
-                    if extra:
-                        log(f'{f} {p}: anual no disponible; se usan {len(extra)} meses')
-                        pend.extend(extra)
                 continue
             r = subprocess.run([sys.executable, os.path.join(AQUI, 'build_indice.py'), '--fuente', f, '--periodo', p, '--zips', *ok, '--out', DATA])
             if r.returncode != 0:
