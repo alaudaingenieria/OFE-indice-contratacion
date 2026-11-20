@@ -40,9 +40,9 @@ def git(*args, check=True):
     return subprocess.run(['git', '-C', RAIZ, *args], capture_output=True, text=True, check=check)
 
 
-def publicar(msg):
-    git('add', '-A', 'data')
-    if not git('status', '--porcelain', 'data').stdout.strip(): return
+def publicar(msg, rutas=('data',)):
+    git('add', '-A', *rutas)
+    if not git('status', '--porcelain', *rutas).stdout.strip(): return
     git('-c', 'user.name=Claude (tarea programada)', '-c', 'user.email=noreply@anthropic.com', 'commit', '-q', '-m', msg)
     for i in range(4):
         r = git('-c', 'push.negotiate=true', 'push', '-q', 'origin', 'HEAD', check=False)
@@ -106,7 +106,40 @@ def retirar(man, f, periodos):
     man['ficheros'] = [x for x in man.get('ficheros', []) if not (x['fuente'] == f and x['periodo'] in periodos)]
 
 
+REGISTRO = os.path.join(RAIZ, 'registro_actualizaciones.log')
+
+
+def registrar(estado, detalle, publicar_git):
+    """Añade una línea al registro de ejecuciones (y la publica) para comprobar que la tarea se ejecuta."""
+    man = json.load(open(MAN)) if os.path.exists(MAN) else {'ficheros': []}
+    tam = sum(f.get('bytes', 0) for f in man['ficheros']) / 1e9
+    ult = max((f['periodo'] for f in man['ficheros'] if len(f['periodo']) == 6), default='-')
+    linea = (f"{datetime.datetime.now():%Y-%m-%d %H:%M} | {estado:<14} | {detalle} | "
+             f"índice: {len(man['ficheros'])} ficheros, {tam:.2f} GB, último mes {ult}")
+    nuevo = not os.path.exists(REGISTRO)
+    with open(REGISTRO, 'a', encoding='utf-8') as fh:
+        if nuevo:
+            fh.write('# Registro de ejecuciones de scripts/actualizar.py (una línea por ejecución)\n'
+                     '# fecha | estado (SIN CAMBIOS / ACTUALIZADO / INCOMPLETO / ERROR) | detalle | estado del índice\n')
+        fh.write(linea + '\n')
+    log('Registro:', linea)
+    if publicar_git:
+        try:
+            publicar(f'Registro: {estado.lower()}', rutas=('registro_actualizaciones.log',))
+        except Exception as e:
+            log('No se pudo publicar el registro:', e)
+
+
 def main():
+    try:
+        _main()
+    except Exception as e:
+        a = sys.argv
+        registrar('ERROR', f'{type(e).__name__}: {str(e)[:200]}', '--publicar' in a)
+        raise
+
+
+def _main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--fuentes', nargs='+', default=list(FUENTES)); ap.add_argument('--periodos', nargs='+')
     ap.add_argument('--desde', type=int, default=2020)
@@ -140,13 +173,14 @@ def main():
             if i == len(pend): q.join()   # da tiempo a que main() añada meses si un anual no existe
         q.put(None)
     threading.Thread(target=productor, daemon=True).start()
-    hechos = []
+    hechos = []; vacios = set()
     import pandas as pd
     while True:
         it = q.get()
         try:
             if it is None: break
             f, p, ok, n = it
+            if not ok: vacios.add(f'{f} {p}')
             log(f'{f} {p}: {len(ok)}/{n} ficheros descargados')
             if not ok:
                 continue
@@ -176,6 +210,19 @@ def main():
                 log(f'Límite de {a.max_horas} h alcanzado; el resto queda para la próxima ejecución.'); stop.set(); break
         finally:
             q.task_done()
+    restantes = [f'{f} {p}' for f, p, _ in pend if f'{f} {p}' not in hechos]
+    y = str(datetime.date.today().year)
+    sin_publicar = [r for r in restantes if r in vacios and len(r.split()[1]) == 6 and r.split()[1][:4] == y]   # meses que Hacienda aún no ha publicado
+    restantes = [r for r in restantes if r not in sin_publicar]
+    nota = f' · Hacienda aún no ha publicado: {", ".join(sin_publicar)}' if sin_publicar else ''
+    if hechos and not restantes:
+        registrar('ACTUALIZADO', 'publicado: ' + ', '.join(hechos) + nota, a.publicar)
+    elif hechos:
+        registrar('INCOMPLETO', 'publicado: ' + ', '.join(hechos) + ' · pendiente: ' + ', '.join(restantes), a.publicar)
+    elif restantes:
+        registrar('INCOMPLETO', 'nada publicado · pendiente (no disponible o con error): ' + ', '.join(restantes), a.publicar)
+    else:
+        registrar('SIN CAMBIOS', 'no hay periodos nuevos que indexar' + nota, a.publicar)
     log('Terminado. Hechos:', ', '.join(hechos) or 'ninguno')
 
 
