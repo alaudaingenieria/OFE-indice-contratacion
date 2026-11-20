@@ -1,53 +1,38 @@
 {
  "ficheros": [
   {
-   "fichero": "adjudicaciones_perfiles_2026_p01.parquet",
+   "fichero": "adjudicaciones_perfiles_202601_p01.parquet",
    "tipo": "adjudicaciones",
    "fuente": "perfiles",
-   "periodo": "2026",
+   "periodo": "202601",
    "parte": 1,
-   "meses": 9,
-   "filas": 217671,
-   "bytes": 9129756,
-   "sha256": "41bc2fa45e3ab976d5f4baf295d0ce01f673c04a73c0433a92af6ea2b482832c",
+   "filas": 30291,
+   "bytes": 1367296,
+   "sha256": "59ee71bc3588366ef4ec49e43437f43c26c34c8a49a9909af982018d17d52bed",
    "generado": "2026-11-20"
   },
   {
-   "fichero": "documentos_perfiles_2026_p01.parquet",
+   "fichero": "documentos_perfiles_202601_p01.parquet",
    "tipo": "documentos",
    "fuente": "perfiles",
-   "periodo": "2026",
+   "periodo": "202601",
    "parte": 1,
-   "meses": 9,
-   "filas": 89465,
-   "bytes": 41185670,
-   "sha256": "7e0ae7e09789e2e81f8b18f59e2d805d07db01d41c6f36c1f8bcd56e050fcaab",
+   "filas": 31842,
+   "bytes": 15373701,
+   "sha256": "b3d5a7c6a9a34ce710d9cccaec0a0bd5298ade8ead6b2bace6caa72339003ee3",
    "generado": "2026-11-20"
   },
   {
-   "fichero": "documentos_perfiles_2026_p02.parquet",
-   "tipo": "documentos",
-   "fuente": "perfiles",
-   "periodo": "2026",
-   "parte": 2,
-   "meses": 9,
-   "filas": 89466,
-   "bytes": 33505528,
-   "sha256": "49755c2ae4c4bdbfbb7214015dc91fbd06c9a100effe90c31ab4c21712059fe0",
-   "generado": "2026-11-20"
-  },
-  {
-   "fichero": "licitaciones_perfiles_2026_p01.parquet",
+   "fichero": "licitaciones_perfiles_202601_p01.parquet",
    "tipo": "licitaciones",
    "fuente": "perfiles",
-   "periodo": "2026",
+   "periodo": "202601",
    "parte": 1,
-   "meses": 9,
-   "filas": 178931,
-   "bytes": 17671356,
-   "sha256": "d2d0523952e5585c4825b583847a8e2c85804d2b56e669c784634f740f7fe512",
+   "filas": 31842,
+   "bytes": 3541108,
+   "sha256": "11b27bc4e7d992335615cb1fe5c2bf5f94baf579a1e31d4f73313752f3753189",
    "generado": "2026-11-20"
   }
  ],
- "generado": "2026-11-20T12:44:37"
+ "generado": "2026-11-20T14:34:41"
 }
