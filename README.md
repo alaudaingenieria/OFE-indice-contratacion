@@ -25,11 +25,26 @@ descargar el manifest y los ficheros que se necesiten, como hace `scripts/leer_i
 | `agregadas` | Plataformas autonómicas agregadas, sin menores (sindicación 1044) |
 | `menores` | Contratos menores (sindicación 1143) |
 
+### Cobertura
+
+| Fuente | Datos desde | Cómo se genera cada año cerrado |
+|---|---|---|
+| `perfiles` | 2012 | 2012–2017: fichero anual de Hacienda · desde 2018: sus 12 ficheros mensuales |
+| `agregadas` | 2016 | 2016–2017: fichero anual · desde 2018: 12 mensuales |
+| `menores` | 2018 | 2018: fichero anual · desde 2019: 12 mensuales |
+
+**Los datos anteriores a 2018 son parciales.** El volumen se dispara en 2018, cuando la Ley 9/2017 de Contratos del
+Sector Público obligó a publicar los perfiles del contratante en la Plataforma; antes solo estaban algunos
+organismos (sobre todo de la Administración General del Estado). Que un contrato no aparezca en esos años no
+significa que no exista. Además, en `perfiles` 2012–2015 la fecha de adjudicación falta en la mayoría de los
+registros, y en `agregadas` no viene nunca: usa la de formalización o la de anuncio.
+
 ### Periodos
 
-- `2020` … año anterior: un periodo por año, generado a partir del ZIP anual de Hacienda.
+- Años cerrados: un periodo por año (`2012`, `2013`…).
 - Año en curso: un periodo por mes (`202601`, `202602`…), según los va publicando Hacienda (primeros días del mes
-  siguiente). Cuando Hacienda publica el anual, este sustituye a los meses de ese año.
+  siguiente). Al cerrar el año, cuando Hacienda publica diciembre, sus 12 meses se agrupan en un periodo anual y
+  los mensuales se retiran.
 
 Los ficheros de Hacienda recogen **los cambios registrados en cada periodo**: una formalización en 2026 de un
 expediente licitado en 2023 aparece en el periodo de 2026. Por eso los periodos cerrados no se regeneran, y para

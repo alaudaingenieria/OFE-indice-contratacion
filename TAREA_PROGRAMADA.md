@@ -7,12 +7,14 @@ En cada ejecución:
 
 1. Lee `data/manifest.json` para saber qué hay publicado.
 2. Construye la lista de pendientes, de lo más antiguo a lo más reciente:
-   - años cerrados (2020 → año anterior) cuyo **fichero anual aún no esté indexado**. Si Hacienda todavía no ha
-     publicado el anual (enero), cubre ese año con sus meses;
+   - años cerrados que **aún no estén indexados**, desde el primer año con datos de cada fuente (perfiles 2012,
+     agregadas 2016, menores 2018). Se descargan como 12 ficheros mensuales en paralelo, o como fichero anual en
+     los años sin mensuales (perfiles y agregadas antes de 2018, menores antes de 2019);
    - del **año en curso**, los **meses ya publicados que no estén indexados**.
 3. Para cada pendiente: descarga el ZIP de Hacienda, genera los tres Parquet en `data/`, actualiza
    `data/manifest.json` y **hace commit y push en cuanto termina ese periodo**. Después borra los temporales.
-   Al indexar el anual de un año, retira los meses de ese año.
+   Al indexar un año completo, retira los meses de ese año (en enero, el año recién cerrado pasa de 12 periodos
+   mensuales a uno anual).
 4. Se detiene al pasar del tiempo máximo (`--max-horas`, por defecto 5). Lo que falte se hace en la siguiente ejecución.
 5. **Deja constancia en `registro_actualizaciones.log`** (raíz del repositorio) y la publica, haya cambios o no.
 
@@ -26,7 +28,8 @@ Como publica periodo a periodo, si la sesión se corta no se pierde lo ya hecho.
 
 ## Cuánto tarda
 
-- La **carga inicial** (2020 a octubre de 2026, tres fuentes) se completó el 20/11/2026.
+- La **carga inicial** se completó el 20–21/11/2026: de 2012 (perfiles), 2016 (agregadas) y 2018 (menores) hasta
+  octubre de 2026. Los años 2012–2019 ocupaban solo 1,27 GB en Hacienda y se indexaron en 22 minutos.
 - Una ejecución semanal normal dura **minutos**: como mucho, descargar y procesar el mes nuevo de cada fuente.
 - Si hubiera que reindexar un año completo (`--periodos`), son unos 10–15 minutos por año y fuente con buena
   velocidad de Hacienda. Esa velocidad varía mucho (en noviembre de 2026 llegó a bajar a ~0,1 MB/s por conexión);
